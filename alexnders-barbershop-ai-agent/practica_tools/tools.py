@@ -25,6 +25,8 @@ AGENDA = {
     "18:00": None,
 
 }
+def _resultado(datos):
+    return json.dumps(datos, ensure_ascii=False)
 
 def _error(mensaje, **extra):
     return json.dumps({"error": mensaje, **extra}, ensure_ascii=False)
@@ -57,9 +59,49 @@ def consultar(tipo_consulta):
     else:
         return json.dumps({"error" : "Consulta no disponible"}, ensure_ascii=False)
 
+#-------------------Tipo Calcular-------------------
 
+def calcular_total(items, cliente_frecuente=False):
+    subtotal = 0
+    detalle = []
 
+    for item in items:
+        servicio = item["servicio"]
+        cantidad = item["cantidad"]
+
+        #verificamos que el servicio exista en PRECIOS
+        if servicio not in PRECIOS:
+            return _error(f"El servicio '{servicio}' no existe.")
+
+        #verificamos que la cantidad sea valida
+        if type(cantidad) is not int or cantidad <=0:
+            return _error(f"La cantidad debe ser un numero mayor a cero.")
+
+        #calculamos elprecio de cada linea
+        linea = PRECIOS[servicio] * cantidad
+        subtotal += linea
+        detalle.append(f"{cantidad} x {servicio} = RD${linea}")
+
+    descuento = 0
+
+    if cliente_frecuente:
+        descuento = round(subtotal * 0.10, 2)
+
+    total = subtotal - descuento
+
+    return _resultado({
+        "detalle": detalle,
+        "subtotal": subtotal,
+        "descuento": descuento,
+        "total": total
+    })
+
+    
 if __name__ == "__main__":
-    print(consultar("precios"))
-    # print(consultar("horas_libres"))
-    # print(consultar("reservaciones"))
+
+    pedido = [ 
+        {"servicio" : "corte_cabello", "cantidad" : 1},
+        {"servicio" : "recorte_barba", "cantidad" : 1}
+    ]
+
+    print(calcular_total(pedido, cliente_frecuente=True))
